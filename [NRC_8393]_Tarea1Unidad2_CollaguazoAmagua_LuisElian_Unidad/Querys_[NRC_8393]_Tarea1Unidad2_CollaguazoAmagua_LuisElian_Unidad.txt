@@ -1,0 +1,63 @@
+select pro.NombreBono as NOMBRE_BONO, pro.Valor as VALOR_BONO, asig.FechaAprobacion
+from Programa pro
+INNER JOIN BENEFICIARIO bene on pro.IdPrograma = bene.IdPrograma
+INNER JOIN Asignacion asig on pro.IdPrograma = asig.IdPrograma
+GROUP BY bene.Cedula
+HAVING pro.Valor > 50;
+
+select bene.Nombre as NOMBRE, sum(regp.Valor) as TOTAL, agen.IdAgencia
+from BENEFICIARIO bene
+INNER JOIN RegistroPagos regp on bene.Cedula = regp.Cedula
+INNER JOIN AgenciaMIES agen on bene.IdAgencia = agen.IdAgencia
+GROUP BY bene.Nombre
+HAVING TOTAL > 150;
+
+select bene.Cedula as CEDULA, bene.Nombre as NOMBRE, regs.Puntaje as PUNTAJE, moni.Fecha as INICIO_MONITOREO
+from RegistroSocial regs
+INNER JOIN BENEFICIARIO bene on regs.IdRegistroSocial = bene.IdRegistroSocial
+INNER JOIN MonitoreoMIES moni on bene.Cedula = moni.Cedula
+GROUP BY bene.Nombre
+HAVING regs.Puntaje > 20.0;
+
+select enc.IdEncuestador as ID, enc.Nombre as NOMBRE_ENCUESTADOR, count(regs.IdRegistroSocial) as NUMERO_ENCUESTAS, bene.Cedula as ID_BENEFICIARIO, regs.Puntaje as PUNTAJE
+from Encuestador enc
+INNER JOIN RegistroSocial regs on enc.IdRegistroSocial = regs.IdRegistroSocial
+INNER JOIN BENEFICIARIO bene on regs.IdRegistroSocial = bene. IdRegistroSocial
+GROUP BY enc.Nombre;
+
+
+select bene.Cedula, bene.Nombre, count(regp.IdPago), agen.IdAgencia
+from RegistroPagos regp
+INNER JOIN BENEFICIARIO bene on regp.Cedula = bene.Cedula
+INNER JOIN AgenciaMIES agen on bene.IdAgencia = agen.IdAgencia
+GROUP BY bene.Cedula;
+
+select pro.NombreBono as NOMBRE_BONO, count(bene.Cedula) as NUMERO_BENEFICIARIOS, ser.Tipo
+from Programa pro
+INNER JOIN BENEFICIARIO bene on pro.IdPrograma = bene.IdPrograma
+INNER JOIN Servicios ser on pro.IdPrograma = ser.IdPrograma
+GROUP BY pro.NombreBono;
+
+select pro.NombreBono as BONO, avg(pro.valor) as PROMEDIO, count(ser.Tipo) as CANTIDAD_BENEFICIARIO, ser.Tipo as TIPO
+from Programa pro
+INNER JOIN BENEFICIARIO bene on pro.IdPrograma = bene.IdPrograma
+INNER JOIN Servicios ser on pro.IdPrograma = ser.IdPrograma
+GROUP BY pro.NombreBono;
+
+select pro.NombreBono as NOMBRE_BONO, max(pro.Valor) as VALOR, ser.Tipo as TIPO_BONO
+from Programa pro
+INNER JOIN BENEFICIARIO bene on pro.IdPrograma = bene.IdPrograma
+INNER JOIN Servicios ser on pro.IdPrograma = ser.IdPrograma;
+
+select ben.Cedula as CEDULA, ben.Nombre as NOMBRE, ben.Edad as EDAD, age.IdAgencia as AGENCIA, pro.NombreBono as BONO
+from BENEFICIARIO ben
+INNER JOIN AgenciaMIES age on ben.IdAgencia = age.IdAgencia
+INNER JOIN Programa pro on ben.IdPrograma = pro.IdPrograma
+where ben.Edad > 30;
+
+select count(bene.Cedula) as CANTIDAD_BENEFICIARIO, pro.NombreBono as BONO, para.Grupo as GRUPO
+from BENEFICIARIO bene
+INNER JOIN Programa pro on bene.IdPrograma = pro.IdPrograma
+INNER JOIN Asignacion asig on pro.IdPrograma = asig.IdPrograma
+INNER JOIN Parametro para on asig.IdParametro = para.IdParametro
+WHERE pro.NombreBono = "Mis mejores anios";
