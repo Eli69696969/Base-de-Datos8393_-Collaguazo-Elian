@@ -1,0 +1,537 @@
+--------- UNIVERSIDAD DE LAS FUERZAS ARMADAS "ESPE ------------------
+------------------- ELIAN COLLAGUAZO ----------------------------
+--------------- SISTEMAS DE BASES DE DATOS --------------------------
+------------------- TRIGGERS BDH ---------------------------
+---------------------------------------------------------------------------------------------------
+------ 1
+---------- Este trigger, llamado TgFechaRegistroPago, se ejecuta antes de realizar una inserción en la tabla "tb_registro_pagos". El trigger está configurado para ejecutarse para cada fila que se inserte en la tabla. La función de este trigger es verificar si el valor del campo "rep_valor" es mayor o igual a 1500. Si se cumple esta condición, el trigger establecerá el valor del campo "rep_fecha" en la fecha y hora actuales utilizando la función "sysdate".
+
+CREATE OR REPLACE TRIGGER TgFechaRegistroPago
+BEFORE INSERT ON tb_registro_pagos
+FOR EACH ROW 
+BEGIN
+  IF :NEW.rep_valor >= 1500 THEN
+    :NEW.rep_fecha := sysdate;
+  END IF;
+END;
+/
+
+insert into tb_registro_pagos(rep_id, rep_fecha, rep_valor, rep_banco, rep_cuenta, ben_ci) values(5002, '12/12/2023', 1500, 'Banco Guayaquil', '22050977885', 4);
+
+
+------ 2
+---------- Este trigger, llamado TgStatusBeneficiario, se ejecuta antes de realizar una inserción en la tabla "tb_beneficiario". El trigger está configurado para ejecutarse para cada fila que se inserte en la tabla. La función de este trigger es verificar si el valor del campo "ben_genero" es igual a 'na'. Si se cumple esta condición, el trigger establecerá el valor del campo "ben_status" en 'FALSO'.
+En resumen, este trigger se utiliza para actualizar automáticamente el estado del beneficiario cuando el género es 'na'. Si el género del beneficiario es 'na', el trigger actualizará automáticamente el valor del campo "ben_status" para esa fila antes de que se realice la inserción en la tabla "tb_beneficiario".
+
+CREATE OR REPLACE TRIGGER TgStatusBeneficiario
+BEFORE INSERT ON tb_beneficiario
+FOR EACH ROW 
+BEGIN
+  IF :NEW.ben_genero = 'na' THEN
+    :NEW.ben_status := 'FALSO';
+  END IF;
+END;
+/
+
+insert into tb_beneficiario values(5001, '1726549171', 'Elian', 21, 'na', 'Verdadero', 6, 5000, 3);
+
+
+----- 3
+---------- Este trigger, llamado TgBeneficiarioCedula, se ejecuta antes de realizar una actualización en la tabla "tb_beneficiario". El trigger está configurado para ejecutarse para cada fila que se actualice en la tabla. La función de este trigger es verificar si el valor del campo "ben_edad" es igual a 21. Si se cumple esta condición, el trigger establecerá el valor del campo "ben_status" en 'VERDADERO'.
+
+CREATE OR REPLACE TRIGGER TgBeneficiarioCedula
+BEFORE update ON tb_beneficiario
+FOR EACH ROW 
+BEGIN
+  IF :NEW.ben_edad = 21 THEN
+    :NEW.ben_status := 'VERDADERO';
+  END IF;
+END;
+/
+
+update tb_beneficiario set ben_cedula = 1726549100 where ben_ci = 5001;
+
+
+
+---- 4
+---------- Este trigger, llamado TgCedulaBene, se ejecuta antes de realizar una actualización en la tabla "tb_beneficiario". El trigger está configurado para ejecutarse para cada fila que se actualice en la tabla. La función de este trigger es verificar si el valor del campo "ben_ci" es par. Si se cumple esta condición, el trigger establecerá el valor del campo "pro_id" en 4 para la fila que se está actualizando. En resumen, este trigger se utiliza para actualizar automáticamente el "pro_id" cuando la cédula del beneficiario es par.
+
+CREATE OR REPLACE TRIGGER TgCedulaBene
+BEFORE UPDATE ON tb_beneficiario
+FOR EACH ROW
+BEGIN
+  IF MOD(:OLD.ben_ci, 2) = 0 THEN
+    :NEW.pro_id := 4;
+  END IF;
+END;
+/
+
+update tb_beneficiario set ben_cedula = 1726549171 where MOD(ben_ci, 2) = 0;
+
+
+----- 5
+---------- Este trigger, llamado TgHorarioCall, se ejecuta antes de realizar una actualización en la tabla "tb_call_center". El trigger está configurado para ejecutarse para cada fila que se actualice en la tabla. La función de este trigger es verificar si el valor del campo "cal_horario" es igual a '09:00-14:00'. Si se cumple esta condición, el trigger establecerá el valor del campo "cal_status" en 'Inactivo' para la fila que se está actualizando.
+
+CREATE OR REPLACE TRIGGER TgHorarioCall
+BEFORE UPDATE ON tb_call_center
+FOR EACH ROW
+BEGIN
+  IF :old.cal_horario = '09:00-14:00' THEN
+    :NEW.cal_status := 'Inactivo';
+  END IF;
+END;
+/
+
+update tb_call_center set cal_nombre = 'Marie Lawsoon' where cal_id = 9;
+
+
+
+---- 6
+---------- El trigger Tg_center se ejecuta antes de realizar una actualización o inserción en la tabla "tb_call_center" y está configurado para ejecutarse para cada fila que se actualice o inserte. La función de este trigger es verificar si el valor del campo "cal_status" es igual a 'Inactivo' o 'Activo'. Si el valor es igual a 'Inactivo', el trigger establece el valor del campo "cal_horario" en 'Sin atencion' para la fila que se está actualizando o insertando. Si el valor es igual a 'Activo', el trigger establece el valor del campo "cal_horario" en '09:00-14:00'.
+
+create or replace trigger Tg_center
+BEFORE UPDATE or INSERT on tb_call_center
+for each row
+BEGIN
+	if :new.cal_status = 'Inactivo' then
+		:new.cal_horario := 'Sin atencion';
+        
+    elsif :new.cal_status = 'Activo' then
+		:new.cal_horario := '09:00-14:00';
+	end if; 
+END;
+/
+
+
+
+----- 7
+---------- Este es un trigger llamado "TgInsertCall" que se dispara antes de insertar una fila en la tabla "tb_call_center". Este trigger establece el valor de la columna "cal_horario" basándose en el valor de la columna "cal_status" de la fila que se está insertando. Si el valor de "cal_status" es "Activo", el valor de "cal_horario" se establecerá en "Atención Inmediata". Si el valor de "cal_status" es "Inactivo", el valor de "cal_horario" se establecerá en "12:00-20:00".
+
+create or replace trigger TgInsertCall
+BEFORE INSERT on tb_call_center
+for each row
+BEGIN
+	if :new.cal_status = 'Activo' then
+		:new.cal_horario := 'Atencion Inmediata';
+        
+    elsif :new.cal_status = 'Inactivo' then
+		:new.cal_horario := '12:00-20:00';
+	end if; 
+END;
+/
+
+insert into tb_call_center values(26, 'Elian Collaguazo', 'Activo', null, 24);
+
+
+
+
+----- 8
+---------- El presente trigger llamado "TgCanton" que se dispara antes de actualizar una fila en la tabla "tb_canton". Este trigger cambia el valor de la columna "can_status" a "Inactivo" si el valor de la columna "can_nombre" de la fila que se está actualizando comienza con la letra "A". Este trigger se aplica a cada fila actualizada en la tabla "tb_canton".
+
+CREATE OR REPLACE TRIGGER TgCanton
+BEFORE update ON tb_canton
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.can_nombre LIKE 'A%' THEN
+    :NEW.can_status := 'Inactivo';
+  END IF;
+END;
+/
+
+update tb_canton set can_nombre = 'Azoguees' where can_id = 3;
+
+
+------ 9
+---------- El presente trigger fue llamado "TgCanton" que se activa antes de actualizar una fila en la tabla "tb_canton". La sentencia condicional IF en el cuerpo del trigger verifica si el valor de la columna "can_nombre" de la fila actualizada comienza con la letra "A". Si es así, el valor de la columna "can_status" se actualiza a "Inactivo". Este trigger se aplica a cada fila actualizada en la tabla "tb_canton".
+
+CREATE OR REPLACE TRIGGER TgCanton
+BEFORE update ON tb_canton
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.can_nombre LIKE 'A%' THEN
+    :NEW.can_status := 'Inactivo';
+  END IF;
+END;
+/
+
+update tb_canton set can_nombre = 'Ambato' where can_id = 23;
+
+
+------ 10
+---------- En el siguiente trigger se realiza ALTER TABLE que permite modificar la definición de la tabla "tb_monitoreo_mies" para permitir valores nulos en la columna "mon_fecha". Luego, se crea un trigger llamado "TgFechaMonitorieo" que se activa antes de insertar una fila en la tabla "tb_monitoreo_mies". Si el valor de "mon_fecha" de la fila que se está insertando es nulo, el valor de la columna "mon_medio" se establece en "Incompleto". Este trigger se aplica a cada fila insertada en la tabla "tb_monitoreo_mies".
+
+ALTER TABLE tb_monitoreo_mies MODIFY ( mon_fecha NULL);
+
+CREATE OR REPLACE TRIGGER TgFechaMonitorieo
+BEFORE insert ON tb_monitoreo_mies
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.mon_fecha is null THEN
+    :NEW.mon_medio := 'Incompleto';
+  END IF;
+END;
+/
+
+insert into tb_monitoreo_mies values(5001, null, 'Web', 5000);
+
+
+
+----- 11
+---------- El de aqui es un trigger llamado "TgInsertarPrograma" se activa antes de insertar una fila en la tabla "tb_programa". La sentencia condicional IF en el cuerpo del trigger verifica si se está insertando una fila en la tabla. Si es así, el valor de la columna "pro_poblacion" se establece en "Consultar con MIES". Este trigger se aplica a cada fila insertada en la tabla "tb_programa".
+
+CREATE OR REPLACE TRIGGER TgInsertarPrograma
+BEFORE insert ON tb_programa
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF inserting then
+    :new.pro_poblacion := 'Consultar con MIES';
+  END IF;
+END;
+/
+
+insert into tb_programa values(7, 'NuevoBono', 'Estudiando', 100, 'Inactivo');
+
+
+----- 12
+---------- A continuación este es un trigger llamado "TgNuevoPrograma" se activa antes de insertar una fila en la tabla "tb_programa". La sentencia UPDATE en el cuerpo del trigger actualiza el valor de la columna "pro_status" a "Activo" en todas las filas de la tabla "tb_programa" que no sean la fila que se está insertando, usando el operador "!=" para excluir la nueva fila. Esto significa que solo puede haber un programa activo a la vez, ya que cualquier nueva inserción actualizará automáticamente todos los demás programas existentes para establecer su estado en "Inactivo". Este trigger se aplica a cada fila insertada en la tabla "tb_programa".
+
+CREATE OR REPLACE TRIGGER TgNuevoPrograma
+BEFORE INSERT ON tb_programa
+FOR EACH ROW 
+BEGIN
+  UPDATE tb_programa SET pro_status = 'Activo' WHERE pro_id != :NEW.pro_id;
+END;
+/
+
+insert into tb_programa values(8, 'NuevoBono', 'Estudiando', 100, 'Inactivo');
+
+
+
+---- 13
+---------- El presenete trigger llamado "TgActualizarCivil" se activa antes de actualizar una fila en la tabla "tb_registro_civil". La sentencia condicional IF en el cuerpo del trigger verifica si el valor de la columna "rec_edad" de la fila actualizada es menor o igual a 35. Si es así, el valor de la columna "rec_status" se establece en "VERDADERO". Esto significa que si un registro civil tiene una edad de 35 o menos, su estado se actualizará automáticamente a "VERDADERO". Este trigger se aplica a cada fila actualizada en la tabla "tb_registro_civil".
+
+CREATE OR REPLACE TRIGGER TgActualizarCivil
+BEFORE update ON tb_registro_civil
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.rec_edad <= 35 THEN
+    :NEW.rec_status := 'VERDADERO';
+  END IF;
+END;
+/
+
+update tb_registro_civil set rec_nombre = 'Louis' where rec_ci = 103;
+
+
+----- 14
+---------- A continuación este es un trigger llamado "TgAumentarPagos" se activa antes de insertar una fila en la tabla "tb_registro_pagos". La sentencia condicional IF en el cuerpo del trigger verifica si se está insertando una fila en la tabla. Si es así, la sentencia UPDATE en el cuerpo del trigger aumenta el valor de la columna "rep_valor" de todas las filas de la tabla "tb_registro_pagos" en un 12%. Esto significa que cualquier nuevo registro de pago tendrá automáticamente un valor un 12% mayor que los pagos anteriores. Cabe recalcar que este trigger se aplica a cada fila insertada en la tabla "tb_registro_pagos".
+
+CREATE OR REPLACE TRIGGER TgAumentarPagos
+BEFORE INSERT ON tb_registro_pagos
+FOR EACH ROW
+ENABLE
+BEGIN
+	if inserting then 
+		UPDATE tb_registro_pagos SET rep_valor = rep_valor + (rep_valor*0.12);
+	END IF;
+END;
+/
+
+insert into tb_registro_pagos values(5003, '07/08/2022', 100, 'Pichincha', '2205997744', 20);
+
+
+----- 15
+---------- Y por último aqui se tiene un trigger llamado "TgAumentarAnios" que se activa antes de insertar una fila en la tabla "tb_beneficiario". La sentencia condicional IF en el cuerpo del trigger verifica si se está insertando una fila en la tabla. Si es así, la sentencia UPDATE en el cuerpo del trigger aumenta el valor de la columna "ben_edad" de todas las filas de la tabla "tb_beneficiario" en 2. Esto significa que cualquier nuevo beneficiario tendrá automáticamente 2 años más de edad que los beneficiarios anteriores. De igual manera toca tener en cuenta que este trigger se aplica a cada fila insertada en la tabla "tb_beneficiario".
+
+CREATE OR REPLACE TRIGGER TgAumentarAnios
+BEFORE INSERT ON tb_beneficiario
+FOR EACH ROW
+ENABLE
+BEGIN
+	if inserting then 
+		UPDATE tb_beneficiario SET ben_edad = ben_edad + 2;
+	END IF;
+END;
+/
+
+insert into tb_beneficiario values(5002, '1725421488', 'Lucho', 21, 'Male', 'FALSO', 3, 4000, 22);
+
+
+
+
+
+--------- UNIVERSIDAD DE LAS FUERZAS ARMADAS "ESPE ------------------
+------------------- ELIAN COLLAGUAZO ----------------------------
+--------------- SISTEMAS DE BASES DE DATOS --------------------------
+------------------- TRIGGERS DB_PRUEBA ---------------------------
+---------------------------------------------------------------------------------------------------
+----------- 1 --------------
+------ Este trigger de Oracle llamado "TgPrecioModifi" se activa antes de una actualización en la tabla "products". Si el nuevo valor de "standart_cost" es nulo, el valor de "description" se actualizará a "Agotado" automáticamente para la fila correspondiente. En resumen, este trigger garantiza que si el producto está agotado, se actualiza la descripción de forma automática.
+
+create or replace trigger TgPrecioModifi
+BEFORE UPDATE on products
+for each row
+BEGIN
+	if :new.standard_cost is null then
+		:new.description := 'Agotado';
+	end if; 
+END;
+/
+
+update products set standard_cost='' where product_id=132;
+
+
+
+----------- 2 --------------
+------ A continuación en este disparador se realizara la alteración de tabla llamada "customers". En la cual se utiliza la instrucción ALTER TABLE para modificar la columna "name" para permitir valores nulos (NULL). Luego, se crea un disparador (trigger) llamado "TgNombreWebsite" que se activa antes de que se actualice cualquier fila de la tabla "customers". Dentro del disparador, se comprueba si el nuevo valor de la columna "name" es nulo y, en ese caso, se asigna el valor "http://www.null.com" a la columna "website" de la misma fila. Finalmente, se ejecuta un update en la tabla "customers", estableciendo el valor de la columna "name" en una cadena vacía ("") es decir Null, para ver la ejecución correcta del disparador.
+
+ALTER TABLE customers MODIFY ( name NULL)
+
+create or replace trigger TgNombreWebsite
+BEFORE update on customers
+for each row
+BEGIN
+	if :new.name is null then
+		:new.website := 'http://www.null.com';
+	end if; 
+END;
+/
+
+update customers set name='' where customer_id=123;
+
+
+----------- 3 --------------
+------ A continuación se puede visualizar la creación de un disparador llamado "TgWebsiteCredit", que se activa antes de la inserción de una nueva fila en la tabla "customers". Dentro del trigger, se utiliza una condición para verificar si el valor de la columna "website" de la nueva fila es igual a "http://www.google.com". En caso de ser cierto, se establece un valor de límite de crédito de 9999 para la columna "credit_limit" de esa misma fila.
+
+create or replace trigger TgWebsiteCredit
+BEFORE insert on customers
+for each row
+BEGIN
+	if :new.website='http://www.google.com' then
+		:new.credit_limit := 9999;
+	end if; 
+END;
+/
+
+Insert into CUSTOMERS (CUSTOMER_ID,NAME,ADDRESS,CREDIT_LIMIT,WEBSITE) values (320,'Google','Washington D. C.',0,'http://www.google.com');
+
+
+
+----------- 4 --------------
+------ En el presente trigger se puede visualizar su creación de un disparador en este caso se va a llamar "TgParLocationNull", que se activa antes de la actualización de cualquier fila en la tabla "locations". Dentro del disparador, se utiliza una condición para comprobar si el valor de la columna "location_id" de la fila que se está actualizando es par o no. Si es par, entonces se establece el valor de la columna "state" de la fila a NULL.
+
+CREATE OR REPLACE TRIGGER TgParLocationNull
+BEFORE UPDATE ON locations
+FOR EACH ROW
+BEGIN
+  IF MOD(:OLD.location_id, 2) = 0 THEN
+    :NEW.state := NULL;
+  END IF;
+END;
+/
+
+UPDATE locations SET state  = 'NULL' WHERE MOD(location_id, 2) = 0;
+
+
+
+----------- 5 --------------
+------ En el presente trigger se puede visualizar su creación de un disparador llamado "TgLocationCountry", que se activa antes de la inserción de una nueva fila en la tabla "locations". Dentro del disparador, se utiliza una condición para verificar si el valor de la columna "country_id" de la nueva fila es igual a 'US'. En caso de ser cierto, se establece el valor de la columna "postal_code" de la misma fila como 'US 99'. Este disparador puede tener como objetivo proporcionar un código postal predeterminado para las ubicaciones en los Estados Unidos en caso de que el usuario no ingrese uno.
+
+create or replace trigger TgLocationCountry
+BEFORE insert on locations
+for each row
+BEGIN
+	if :new.country_id='US' then
+		:new.postal_code := 'US 99';
+	end if; 
+END;
+/
+
+Insert into LOCATIONS (LOCATION_ID,ADDRESS,POSTAL_CODE,CITY,STATE,COUNTRY_ID) values (24,'Washington D. C.',null,'San Francisco',null,'US');
+
+
+
+----------- 6 --------------
+------ Aqui se puede ver la creación de un disparador llamado "TgGigaProduct", que se activa antes de la inserción de una nueva fila en la tabla "products". Dentro del disparador, se utiliza una condición para verificar si el valor de la columna "product_name" de la nueva fila comienza con "GIGABYTE" en cualquier combinación de mayúsculas o minúsculas. Si la condición se cumple, se establece el valor de la columna "standard_cost" de la misma fila en 500.56. Este disparador puede tener como objetivo establecer un costo estándar predeterminado para los productos de la marca "Gigabyte" en la tabla "products". De esta manera, se puede garantizar que los productos de esta marca tengan un costo coherente en la base de datos.
+
+CREATE OR REPLACE TRIGGER TgGigaProduct
+BEFORE INSERT ON products
+FOR EACH ROW
+BEGIN
+  IF UPPER(:NEW.product_name) LIKE 'GIGABYTE%' THEN
+    :NEW.standard_cost := 500.56;
+  END IF;
+END;
+/
+
+Insert into PRODUCTS (PRODUCT_ID,PRODUCT_NAME,DESCRIPTION,STANDARD_COST,LIST_PRICE,CATEGORY_ID) values (290,'Gigabyte Intel Core','Speed:2.3GHz,Cores:18,TDP:145W',0,3410.46,2);
+
+
+---------- 7 -------------
+-------- En este trigger como primer paso se tiene que realizar la inserción de una nueva fila en la tabla "countries" con los valores 'EC', 'Ecuador' y 2 para las columnas "country_id", "country_name" y "region_id", respectivamente, despues se procede a la creación de un trigger llamado "TgEcLocation", que se activara antes de la inserción de una nueva fila en la tabla "locations". Dentro del disparador, se utiliza una condición para verificar si el valor de la columna "country_id" de la nueva fila comienza con "EC" en cualquier combinación de mayúsculas o minúsculas. Si la condición se cumple, se establece el valor de la columna "postal_code" de la misma fila como '+593'. Este disparador puede tener como objetivo proporcionar un código postal predeterminado para las ubicaciones en Ecuador en caso de que el usuario no ingrese uno.
+
+Insert into COUNTRIES (COUNTRY_ID,COUNTRY_NAME,REGION_ID) values ('EC','Ecuador',2);	
+
+CREATE OR REPLACE TRIGGER TgEcLocation
+BEFORE INSERT ON locations
+FOR EACH ROW
+BEGIN
+  IF UPPER(:NEW.country_id) LIKE 'EC' THEN
+    :NEW.postal_code := '+593';
+  END IF;
+END;
+/
+
+Insert into LOCATIONS (LOCATION_ID,ADDRESS,POSTAL_CODE,CITY,STATE,COUNTRY_ID) values (25,'Pichincha-Quito',null,'Quito','Mejia','EC');
+
+
+---------- 8 -------------
+-------- En el siguiente codigo se puede visualizar la creación de un disparador (trigger) llamado "TgAumentarQuaInv", que se activa antes de una operación de inserción, eliminación o actualización en la tabla "product_categories". Dentro del disparador, se utiliza una condición para determinar el tipo de operación que se está realizando en la tabla. Si se está insertando una nueva fila, se actualiza la columna "quantity" en la tabla "inventories" aumentando su valor en 1. Si se está eliminando o actualizando una fila existente, se realiza la misma actualización en la columna "quantity" de la tabla "inventories". Este disparador puede tener como objetivo mantener actualizado el inventario de los productos asociados a las categorías en la tabla "product_categories", de manera que cada vez que se realice una operación en esta tabla, la cantidad de inventario en la tabla "inventories" se incremente en 1.
+
+CREATE OR REPLACE TRIGGER TgAumentarQuaInv
+BEFORE INSERT or DELETE or UPDATE ON product_categories
+FOR EACH ROW
+ENABLE
+BEGIN
+	if inserting then 
+		UPDATE inventories SET quantity = quantity+1;
+	elsif deleting then
+		UPDATE inventories SET quantity = quantity+1;
+	elsif updating then
+		UPDATE inventories SET quantity = quantity+1;
+	END IF;
+END;
+/
+
+Insert into PRODUCT_CATEGORIES (CATEGORY_ID,CATEGORY_NAME) values (7,'OtraCategoria1');
+
+
+
+---------- 9 -------------
+-------- En el siguiente trigger se activa antes de actualizar un registro en la tabla "locations" y se llama "TgStateLocation". El trigger se ejecuta para cada fila que se está actualizando en la tabla. El código del trigger comienza con una cláusula IF que evalúa si el valor del campo "city" es igual a 'Roma'. Si la condición es verdadera, el valor del campo "postal_code" se establece en '00136' para el registro que se está actualizando.
+
+En otras palabras, este trigger automatiza la asignación del código postal de Roma para las ubicaciones en la tabla "locations" que tienen "Roma" como ciudad. Esto podría ser útil en situaciones en las que es necesario asegurarse de que las ubicaciones tengan el código postal correcto en función de su ciudad.
+
+create or replace trigger TgStateLocation
+BEFORE update on locations
+for each row
+BEGIN
+	if :new.city = 'Roma' then
+		:new.postal_code := '00136';
+	end if; 
+END;
+/
+
+update locations set city = 'Roma' where location_id=1;
+
+
+
+---------- 10 -------------
+-------- En el siguiente trigger se activa antes de actualizar un registro en la tabla "orders" y se llama "TgOrdersModifi". El trigger se ejecuta para cada fila que se está actualizando en la tabla. El código del trigger comienza con una cláusula IF que evalúa si el valor del campo "status" es igual a 'Shipped'. Si la condición es verdadera, el valor del campo "txt_auxiliar" se establece en 'Con descuento' para el registro que se está actualizando.
+
+create or replace trigger TgOrdersModifi
+BEFORE UPDATE on orders
+for each row
+BEGIN
+	if :new.status = 'Shipped' then
+		:new.txt_auxiliar := 'Con descuento';
+	end if; 
+END;
+/
+
+update orders set status = 'Shipped' where order_id = 6;
+
+
+
+---------- 11 -------------
+-------- En el siguiente trigger se activa antes de que se realice una inserción en la tabla "locations". El trigger está configurado para que se ejecute para cada fila que se inserte en la tabla. El propósito de este trigger es verificar si el valor del campo "state" es nulo en la fila recién insertada. Si el valor del campo es nulo, el trigger establece el valor del campo en '!!!PENDIENTE!!!'.
+El objetivo de este trigger es garantiza que no se inserten filas en la tabla "locations" sin un valor válido en el campo "state". Si se intenta insertar una fila sin un valor en este campo, el trigger establece un valor predeterminado para alertar al usuario que debe ingresar un valor correcto en "State".
+
+create or replace trigger TgLocationsState
+BEFORE insert on locations
+for each row
+BEGIN
+	if :new.state is null then
+		:new.state := '!!!PENDIENTE!!!';
+	end if; 
+END;
+/
+
+insert into locations values (30, 'Guamani', '171207', 'Quito', null, 'AR');
+
+
+
+---------- 12 -------------
+-------- El trigger que se va a presentar a continuación se llama TgNombrePhoneContacts y se ejecutara antes de realizar una inserción en la tabla "contacts". El trigger está configurado para ejecutarse para cada fila que se inserte en la tabla. La función de este trigger es verificar si el valor del campo "first_name" es igual a 'Elian' y si el valor del campo "last_name" es igual a 'Collaguazo'. Si se cumplen estas condiciones, el trigger establece el valor del campo "phone" en '0991623861'. En resumen, este trigger se utiliza para asignar automáticamente un número de teléfono a un contacto específico en función de su nombre y apellido. Si el nombre y apellido coinciden con los valores especificados, el trigger actualizará automáticamente el valor del campo "phone" para esa fila antes de que se realice la inserción en la tabla.
+
+CREATE OR REPLACE TRIGGER TgNombrePhoneContacts
+BEFORE INSERT ON contacts
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.first_name LIKE 'Elian' and :NEW.last_name LIKE 'Collaguazo' THEN
+    :NEW.phone := '0991623861';
+  END IF;
+END;
+/
+
+Insert into CONTACTS (CONTACT_ID,FIRST_NAME,LAST_NAME,EMAIL,PHONE,CUSTOMER_ID) values (320,'Elian','Collaguazo','elian.collaquiza@espe.com','',320);
+
+
+
+---------- 13 -------------
+-------- En este trigger se puede observar que se le llamo TgDateEmploy, y este trigger se ejecuta antes de realizar una actualización en la tabla "employees". El trigger está configurado para ejecutarse para cada fila que se actualice en la tabla. La función de este trigger es verificar si el valor del campo "hire_date" incluye el año 2023. Si se cumple esta condición, el trigger establecerá el valor del campo "Job_title" en 'En Curso'.
+
+CREATE OR REPLACE TRIGGER TgDateEmploy
+BEFORE update ON employees
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.hire_date LIKE '%2023' THEN
+    :NEW.Job_title := 'En Curso';
+  END IF;
+END;
+/
+
+update employees set hire_date='17/03/2023' where employee_id=96;
+
+
+---------- 14 -------------
+-------- El presente trigger se ejecuta antes de realizar una inserción en la tabla "warehouses". El trigger está configurado para ejecutarse para cada fila que se inserte en la tabla. 
+La función de este trigger es actualizar automáticamente el nombre de la categoría de producto en la tabla "product_categories" a 'Producto1' cuando se inserta una nueva fila en la tabla "warehouses". En resumen, este trigger se utiliza para mantener actualizada la tabla "product_categories" con el nombre correcto de la categoría de producto cuando se realiza una nueva inserción en la tabla "warehouses".
+
+CREATE OR REPLACE TRIGGER TgWarehouseCate
+BEFORE INSERT ON warehouses
+FOR EACH ROW
+ENABLE
+BEGIN
+	if inserting then 
+		UPDATE product_categories SET category_name = 'Producto1';
+	END IF;
+END;
+/
+
+Insert into WAREHOUSES (WAREHOUSE_ID, WAREHOUSE_NAME, LOCATION_ID) values (10,'WarehousesOtro',25);
+
+
+
+---------- 15 -------------
+-------- En este trigger llamado TgCustomersNet, se ejecuta antes de realizar una inserción en la tabla "customers". El trigger está configurado para ejecutarse para cada fila que se inserte en la tabla. La función de este trigger es verificar si el valor del campo "website" incluye la extensión ".net". Si se cumple esta condición, el trigger establecerá el valor del campo "credit_limit" en 99999. por ejemplo
+
+CREATE OR REPLACE TRIGGER TgCustomersNet
+BEFORE INSERT ON customers
+FOR EACH ROW
+ENABLE
+BEGIN
+  IF :NEW.website LIKE '%.net' THEN
+    :NEW.credit_limit := 99999;
+  END IF;
+END;
+/
+
+Insert into enacato3.CUSTOMERS (CUSTOMER_ID,NAME,ADDRESS,CREDIT_LIMIT,WEBSITE) values (321,'United Continental Holdings','2904 S Salina St, Syracuse, NY',0,'http://www.unitedcontinentalholdings.net');
